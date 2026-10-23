@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gửi Vợ Yêu ❤️</title>
+    <!-- Tích hợp Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pastelPink: {
+                            light: '#fff0f3',
+                            DEFAULT: '#ffb3c6',
+                            dark: '#ff758f',
+                            deep: '#c9184a' /* Đỏ đô / Hồng đậm */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Tùy chỉnh thanh trượt */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 15px 0;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 12px;
+            cursor: pointer;
+            background: #ffe4e8;
+            border-radius: 9999px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 30px;
+            width: 30px;
+            border-radius: 50%;
+            background: #ff4d6d;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -9px;
+            box-shadow: 0 3px 8px rgba(255, 77, 109, 0.4);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+
+        /* Trái tim bay */
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0.5) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-20vh) scale(1.5) rotate(45deg);
+                opacity: 0;
+            }
+        }
+        .floating-heart {
+            position: fixed;
+            z-index: 0;
+            pointer-events: none;
+            animation: floatUp 5s linear forwards;
+        }
+
+        /* Container khung vẽ */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            /* Tỷ lệ khung hình phù hợp để chứa x từ -2.2 đến 2.2 và y từ -2.2 đến 3.2 */
+            aspect-ratio: 4.4 / 5.4; 
+            margin: 0 auto;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 8px 30px rgba(255, 179, 198, 0.2);
+            border: 1px solid #ffe4e8;
+            z-index: 10;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+        }
+
+        .fade-transition {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 sm:p-6 text-gray-700 relative">
+
+    <div class="w-full max-w-xl flex flex-col gap-6 z-10 my-auto">
+        
+        <!-- TRẠNG THÁI BAN ĐẦU -->
+        <div id="initialTexts" class="text-center fade-transition opacity-100 transform translate-y-0 h-24 flex flex-col justify-center">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Vẻ đẹp của toán học</h1>
+            <div class="inline-block bg-pastelPink-light py-2 px-4 rounded-xl border border-pink-100 mx-auto">
+                <code class="text-pastelPink-deep font-semibold text-sm sm:text-base">
+                    f(x) = ∛(x²) + √(3 - x²) · sin(mπx)
+                </code>
+            </div>
+        </div>
+
+        <!-- THÔNG ĐIỆP KHI KÉO ĐẾN 100 -->
+        <div id="finalMessage" class="hidden text-center fade-transition opacity-0 transform translate-y-4 h-24 flex flex-col justify-center">
+            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-[#c9184a] leading-tight px-2 drop-shadow-sm">
+                Cảm ơn vợ đã lo cho chồng, chồng gần đỡ rồi vợ không phải lo quá đâu nha. Iu vợ rất nhiều!
+            </h2>
+        </div>
+
+        <!-- KHUNG ĐỒ THỊ -->
+        <div class="canvas-container">
+            <canvas id="mathCanvas"></canvas>
+        </div>
+
+        <!-- THANH TRƯỢT -->
+        <div class="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(255,179,198,0.2)] border border-pink-100 relative z-20 mt-2">
+            <div class="flex justify-between items-end mb-2">
+                <span id="dragHint" class="text-sm font-bold text-gray-500 uppercase tracking-wide">Kéo hết sẽ có quà</span>
+                <span id="dragHintHidden" class="hidden text-sm font-bold text-transparent uppercase tracking-wide">Khoảng trống</span>
+                
+                <span class="text-3xl font-bold text-[#c9184a]" id="sliderValue">0</span>
+            </div>
+            
+            <input type="range" id="mSlider" min="0" max="100" step="0.1" value="0">
+            
+            <div class="flex justify-between text-xs text-gray-400 font-bold px-1 mt-1">
+                <span>0</span>
+                <span>25</span>
+                <span>50</span>
+                <span>75</span>
+                <span class="text-[#c9184a] text-sm">100</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Nơi chứa trái tim bay -->
+    <div id="heartRain" class="fixed inset-0 pointer-events-none z-0"></div>
+
+    <script>
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('mSlider');
+        const valueDisplay = document.getElementById('sliderValue');
+        
+        const initialTexts = document.getElementById('initialTexts');
+        const finalMessage = document.getElementById('finalMessage');
+        const dragHint = document.getElementById('dragHint');
+        const dragHintHidden = document.getElementById('dragHintHidden');
+        const heartRain = document.getElementById('heartRain');
+
+        let isLoveMode = false;
+        let heartInterval;
+        let dpr = window.devicePixelRatio || 1;
+        let width, height;
+
+        // Tọa độ thực tế cần hiển thị để không bị cắt mép
+        // X từ -2 đến 2, ta lấy dư ra 1 chút thành -2.2 đến 2.2
+        // Y từ -2 đến 3, ta lấy dư ra 1 chút thành -2.2 đến 3.2
+        const minX = -2.2, maxX = 2.2;
+        const minY = -2.2, maxY = 3.2;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            
+            ctx.scale(dpr, dpr);
+            drawGraph(parseFloat(slider.value));
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Chuyển đổi tọa độ toán học sang tọa độ pixel trên canvas
+        function mapX(x) {
+            return ((x - minX) / (maxX - minX)) * width;
+        }
+        function mapY(y) {
+            return height - ((y - minY) / (maxY - minY)) * height;
+        }
+
+        function drawGraph(m) {
+            ctx.clearRect(0, 0, width, height);
+
+            const originX = mapX(0);
+            const originY = mapY(0);
+
+            // 1. VẼ LƯỚI TỌA ĐỘ VÀ CÁC SỐ ĐƠN VỊ
+            ctx.font = '500 12px Quicksand, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Vẽ các đường lưới mờ
+            ctx.beginPath();
+            ctx.strokeStyle = '#f1f5f9'; // Lưới mờ
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+
+            // Lưới dọc và số trên trục Ox
+            for (let i = -2; i <= 2; i++) {
+                const cx = mapX(i);
+                // Vẽ đường lưới dọc
+                ctx.moveTo(cx, 0);
+                ctx.lineTo(cx, height);
+            }
+            
+            // Lưới ngang và số trên trục Oy
+            for (let i = -2; i <= 3; i++) {
+                const cy = mapY(i);
+                // Vẽ đường lưới ngang
+                ctx.moveTo(0, cy);
+                ctx.lineTo(width, cy);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset nét liền
+
+            // 2. VẼ HỆ TRỤC TỌA ĐỘ Oxy CHÍNH
+            ctx.beginPath();
+            ctx.strokeStyle = '#cbd5e1'; 
+            ctx.lineWidth = 1.5;
+            
+            // Trục Ox
+            ctx.moveTo(0, originY);
+            ctx.lineTo(width, originY);
+            // Mũi tên Ox
+            ctx.moveTo(width - 8, originY - 4);
+            ctx.lineTo(width, originY);
+            ctx.lineTo(width - 8, originY + 4);
+
+            // Trục Oy
+            ctx.moveTo(originX, height);
+            ctx.lineTo(originX, 0);
+            // Mũi tên Oy
+            ctx.moveTo(originX - 4, 8);
+            ctx.lineTo(originX, 0);
+            ctx.lineTo(originX + 4, 8);
+            ctx.stroke();
+
+            // 3. GHI CÁC CHỮ SỐ ĐƠN VỊ (Giống giấy ô ly)
+            ctx.fillStyle = '#64748b';
+            
+            // Đánh số trục Ox (-2, -1, 1, 2)
+            for (let i = -2; i <= 2; i++) {
+                if (i !== 0) {
+                    const cx = mapX(i);
+                    ctx.fillText(i, cx, originY + 14);
+                    // Vạch đánh dấu nhỏ trên trục
+                    ctx.beginPath();
+                    ctx.moveTo(cx, originY - 3);
+                    ctx.lineTo(cx, originY + 3);
+                    ctx.stroke();
+                }
+            }
+
+            // Đánh số trục Oy (-2, -1, 1, 2, 3)
+            for (let i = -2; i <= 3; i++) {
+                if (i !== 0) {
+                    const cy = mapY(i);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(i, originX - 8, cy);
+                    // Vạch đánh dấu nhỏ trên trục
+                    ctx.beginPath();
+                    ctx.moveTo(originX - 3, cy);
+                    ctx.lineTo(originX + 3, cy);
+                    ctx.stroke();
+                }
+            }
+
+            // Nhãn O, x, y
+            ctx.textAlign = 'left';
+            ctx.fillText('O', originX - 14, originY + 14);
+            ctx.fillText('x', width - 15, originY - 12);
+            ctx.fillText('y', originX + 10, 10);
+            
+            // 4. VẼ ĐỒ THỊ HÀM SỐ TRÁI TIM
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff758f'; 
+            // Điều chỉnh nét vẽ để đồ thị khi m lớn không bị bết lại thành một khối đen đặc
+            ctx.lineWidth = m > 80 ? 0.8 : 1.5; 
+            ctx.lineJoin = 'round';
+
+            const domain = Math.sqrt(3); // x chạy từ -sqrt(3) đến sqrt(3)
+            // Bước nhảy càng nhỏ đồ thị càng mượt và hiển thị rõ đường gợn sóng
+            const step = 0.002; 
+
+            let firstPoint = true;
+
+            for (let x = -domain; x <= domain; x += step) {
+                // Công thức: f(x) = cbrt(x^2) + sqrt(3 - x^2) * sin(m * pi * x)
+                const x2 = x * x;
+                const cbrtX2 = Math.cbrt(x2);
+                const sqrtPart = Math.sqrt(Math.max(0, 3 - x2)); 
+                const y = cbrtX2 + sqrtPart * Math.sin(m * Math.PI * x);
+
+                const cx = mapX(x);
+                const cy = mapY(y);
+
+                if (firstPoint) {
+                    ctx.moveTo(cx, cy);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(cx, cy);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // TẠO TRÁI TIM BAY
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('floating-heart');
+            
+            const colors = ['#ff4d6d', '#ffb3c6', '#ff8fa3', '#c9184a'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            heart.innerHTML = `
+                <svg viewBox="0 0 32 29.6" width="${Math.random() * 15 + 15}" height="${Math.random() * 15 + 15}" fill="${color}">
+                    <path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4 c0,9.4,16,21.2,16,21.2s16-11.8,16-21.2C32,3.8,28.2,0,23.6,0z"/>
+                </svg>
+            `;
+            
+            heart.style.left = `${Math.random() * 100}vw`;
+            heart.style.animationDuration = `${Math.random() * 3 + 4}s`; 
+            
+            heartRain.appendChild(heart);
+            setTimeout(() => heart.remove(), 7000);
+        }
+
+        // LẮNG NGHE SỰ KIỆN THANH TRƯỢT
+        slider.addEventListener('input', function() {
+            const m = parseFloat(this.value);
+            valueDisplay.textContent = m % 1 === 0 ? m : m.toFixed(1);
+            
+            drawGraph(m);
+
+            if (m >= 100) {
+                if (!isLoveMode) {
+                    isLoveMode = true;
+                    
+                    // Ẩn chữ ban đầu
+                    initialTexts.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => {
+                        initialTexts.classList.add('hidden');
+                        
+                        // Hiện thông điệp cuối
+                        finalMessage.classList.remove('hidden');
+                        setTimeout(() => {
+                            finalMessage.classList.remove('opacity-0', 'transform', 'translate-y-4');
+                            finalMessage.classList.add('opacity-100', 'translate-y-0');
+                        }, 50);
+                    }, 300);
+
+                    dragHint.classList.add('hidden');
+                    dragHintHidden.classList.remove('hidden'); 
+                    
+                    // Tạo mưa trái tim
+                    for(let i=0; i<30; i++) {
+                        setTimeout(createHeart, i * 100);
+                    }
+                    heartInterval = setInterval(createHeart, 300);
+                }
+            } else {
+                if (isLoveMode) {
+                    isLoveMode = false;
+                    
+                    // Ẩn thông điệp cuối
+                    finalMessage.classList.add('opacity-0', 'translate-y-4');
+                    setTimeout(() => {
+                        finalMessage.classList.add('hidden');
+                        
+                        // Hiện lại chữ ban đầu
+                        initialTexts.classList.remove('hidden');
+                        setTimeout(() => {
+                            initialTexts.classList.remove('opacity-0', 'scale-95');
+                        }, 50);
+                    }, 300);
+
+                    dragHintHidden.classList.add('hidden');
+                    dragHint.classList.remove('hidden');
+
+                    clearInterval(heartInterval);
+                }
+            }
+        });
+
+        // Khởi tạo
+        setTimeout(() => {
+            resizeCanvas();
+        }, 50);
+
+    </script>
+</body>
+</html>
